@@ -154,6 +154,7 @@ public class ZeppelinServer extends ResourceConfig {
 
   public static void main(String[] args) throws InterruptedException, IOException {
     ZeppelinServer.conf = ZeppelinConfiguration.create();
+    conf.setProperty("args", args);
 
     jettyWebServer = setupJettyServer(conf);
     initMetrics(conf);

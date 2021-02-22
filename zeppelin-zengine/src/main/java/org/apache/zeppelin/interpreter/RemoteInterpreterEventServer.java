@@ -35,7 +35,6 @@ import org.apache.zeppelin.interpreter.remote.RemoteInterpreterUtils;
 import org.apache.zeppelin.interpreter.thrift.AppOutputAppendEvent;
 import org.apache.zeppelin.interpreter.thrift.AppOutputUpdateEvent;
 import org.apache.zeppelin.interpreter.thrift.AppStatusUpdateEvent;
-import org.apache.zeppelin.interpreter.thrift.InterpreterRPCException;
 import org.apache.zeppelin.interpreter.thrift.ParagraphInfo;
 import org.apache.zeppelin.interpreter.thrift.RegisterInfo;
 import org.apache.zeppelin.interpreter.thrift.OutputAppendEvent;
@@ -159,7 +158,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void registerInterpreterProcess(RegisterInfo registerInfo) throws InterpreterRPCException, TException {
+  public void registerInterpreterProcess(RegisterInfo registerInfo) throws TException {
     InterpreterGroup interpreterGroup =
         interpreterSettingManager.getInterpreterGroupById(registerInfo.getInterpreterGroupId());
     if (interpreterGroup == null) {
@@ -180,7 +179,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void unRegisterInterpreterProcess(String intpGroupId) throws InterpreterRPCException, TException {
+  public void unRegisterInterpreterProcess(String intpGroupId) throws TException {
     LOGGER.info("Unregister interpreter process: {}", intpGroupId);
     InterpreterGroup interpreterGroup =
             interpreterSettingManager.getInterpreterGroupById(intpGroupId);
@@ -197,7 +196,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void sendWebUrl(WebUrlInfo weburlInfo) throws InterpreterRPCException, TException {
+  public void sendWebUrl(WebUrlInfo weburlInfo) throws TException {
     InterpreterGroup interpreterGroup =
             interpreterSettingManager.getInterpreterGroupById(weburlInfo.getInterpreterGroupId());
     if (interpreterGroup == null) {
@@ -209,7 +208,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void appendOutput(OutputAppendEvent event) throws InterpreterRPCException, TException {
+  public void appendOutput(OutputAppendEvent event) throws TException {
     if (event.getAppId() == null) {
       runner.appendBuffer(
           event.getNoteId(), event.getParagraphId(), event.getIndex(), event.getData());
@@ -220,7 +219,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void updateOutput(OutputUpdateEvent event) throws InterpreterRPCException, TException {
+  public void updateOutput(OutputUpdateEvent event) throws TException {
     if (event.getAppId() == null) {
       listener.onOutputUpdated(event.getNoteId(), event.getParagraphId(), event.getIndex(),
           InterpreterResult.Type.valueOf(event.getType()), event.getData());
@@ -231,7 +230,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void updateAllOutput(OutputUpdateAllEvent event) throws InterpreterRPCException, TException {
+  public void updateAllOutput(OutputUpdateAllEvent event) throws TException {
     listener.onOutputClear(event.getNoteId(), event.getParagraphId());
     for (int i = 0; i < event.getMsg().size(); i++) {
       RemoteInterpreterResultMessage msg = event.getMsg().get(i);
@@ -241,29 +240,29 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void appendAppOutput(AppOutputAppendEvent event) throws InterpreterRPCException, TException {
+  public void appendAppOutput(AppOutputAppendEvent event) throws TException {
     appListener.onOutputAppend(event.noteId, event.paragraphId, event.index, event.appId,
         event.data);
   }
 
   @Override
-  public void updateAppOutput(AppOutputUpdateEvent event) throws InterpreterRPCException, TException {
+  public void updateAppOutput(AppOutputUpdateEvent event) throws TException {
     appListener.onOutputUpdated(event.noteId, event.paragraphId, event.index, event.appId,
         InterpreterResult.Type.valueOf(event.type), event.data);
   }
 
   @Override
-  public void updateAppStatus(AppStatusUpdateEvent event) throws InterpreterRPCException, TException {
+  public void updateAppStatus(AppStatusUpdateEvent event) throws TException {
     appListener.onStatusChange(event.noteId, event.paragraphId, event.appId, event.status);
   }
 
   @Override
-  public void checkpointOutput(String noteId, String paragraphId) throws InterpreterRPCException, TException {
+  public void checkpointOutput(String noteId, String paragraphId) throws TException {
     listener.checkpointOutput(noteId, paragraphId);
   }
 
   @Override
-  public void runParagraphs(RunParagraphsEvent event) throws InterpreterRPCException, TException {
+  public void runParagraphs(RunParagraphsEvent event) throws TException {
     try {
       listener.runParagraphs(event.getNoteId(), event.getParagraphIndices(),
           event.getParagraphIds(), event.getCurParagraphId());
@@ -273,12 +272,12 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
         LOGGER.info("complete runParagraphs.{}", event);
       }
     } catch (IOException e) {
-      throw new InterpreterRPCException(e.toString());
+      throw new TException(e);
     }
   }
 
   @Override
-  public void addAngularObject(String intpGroupId, String json) throws InterpreterRPCException, TException {
+  public void addAngularObject(String intpGroupId, String json) throws TException {
     LOGGER.debug("Add AngularObject, interpreterGroupId: {}, json: {}", intpGroupId, json);
     AngularObject<?> angularObject = AngularObject.fromJson(json);
     InterpreterGroup interpreterGroup =
@@ -304,12 +303,12 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void updateAngularObject(String intpGroupId, String json) throws InterpreterRPCException, TException {
+  public void updateAngularObject(String intpGroupId, String json) throws TException {
     AngularObject<?> angularObject = AngularObject.fromJson(json);
     InterpreterGroup interpreterGroup =
         interpreterSettingManager.getInterpreterGroupById(intpGroupId);
     if (interpreterGroup == null) {
-      throw new InterpreterRPCException("Invalid InterpreterGroupId: " + intpGroupId);
+      throw new TException("Invalid InterpreterGroupId: " + intpGroupId);
     }
     AngularObject localAngularObject = interpreterGroup.getAngularObjectRegistry().get(
         angularObject.getName(), angularObject.getNoteId(), angularObject.getParagraphId());
@@ -338,11 +337,11 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   public void removeAngularObject(String intpGroupId,
                                   String noteId,
                                   String paragraphId,
-                                  String name) throws InterpreterRPCException, TException {
+                                  String name) throws TException {
     InterpreterGroup interpreterGroup =
         interpreterSettingManager.getInterpreterGroupById(intpGroupId);
     if (interpreterGroup == null) {
-      throw new InterpreterRPCException("Invalid InterpreterGroupId: " + intpGroupId);
+      throw new TException("Invalid InterpreterGroupId: " + intpGroupId);
     }
     interpreterGroup.getAngularObjectRegistry().remove(name, noteId, paragraphId);
 
@@ -357,11 +356,11 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public void sendParagraphInfo(String intpGroupId, String json) throws InterpreterRPCException, TException {
+  public void sendParagraphInfo(String intpGroupId, String json) throws TException {
     InterpreterGroup interpreterGroup =
         interpreterSettingManager.getInterpreterGroupById(intpGroupId);
     if (interpreterGroup == null) {
-      throw new InterpreterRPCException("Invalid InterpreterGroupId: " + intpGroupId);
+      throw new TException("Invalid InterpreterGroupId: " + intpGroupId);
     }
 
     Map<String, String> paraInfos = GSON.fromJson(json,
@@ -376,7 +375,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public List<String> getAllResources(String intpGroupId) throws InterpreterRPCException, TException {
+  public List<String> getAllResources(String intpGroupId) throws TException {
     ResourceSet resourceSet = getAllResourcePoolExcept(intpGroupId);
     List<String> resourceList = new LinkedList<>();
     for (Resource r : resourceSet) {
@@ -386,7 +385,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   }
 
   @Override
-  public ByteBuffer getResource(String resourceIdJson) throws InterpreterRPCException, TException {
+  public ByteBuffer getResource(String resourceIdJson) throws TException {
     ResourceId resourceId = ResourceId.fromJson(resourceIdJson);
     Object o = getResource(resourceId);
     ByteBuffer obj;
@@ -396,7 +395,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
       try {
         obj = Resource.serializeObject(o);
       } catch (IOException e) {
-        throw new InterpreterRPCException(e.toString());
+        throw new TException(e);
       }
     }
     return obj;
@@ -410,8 +409,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
    * @throws TException
    */
   @Override
-  public ByteBuffer invokeMethod(String intpGroupId, String invokeMethodJson)
-          throws InterpreterRPCException, TException {
+  public ByteBuffer invokeMethod(String intpGroupId, String invokeMethodJson) throws TException {
     InvokeResourceMethodEventMessage invokeMethodMessage =
         InvokeResourceMethodEventMessage.fromJson(invokeMethodJson);
     Object ret = invokeResourceMethod(intpGroupId, invokeMethodMessage);
@@ -430,7 +428,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
 
   @Override
   public List<ParagraphInfo> getParagraphList(String user, String noteId)
-          throws InterpreterRPCException, TException {
+      throws TException, ServiceException {
     LOGGER.info("get paragraph list from remote interpreter noteId: {}, user = {}",noteId, user);
 
     if (user != null && noteId != null) {
@@ -438,7 +436,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
       try {
         paragraphInfos = listener.getParagraphList(user, noteId);
       } catch (IOException e) {
-       throw new InterpreterRPCException(e.toString());
+       throw new TException(e);
       }
       return paragraphInfos;
     } else {
@@ -547,8 +545,7 @@ public class RemoteInterpreterEventServer implements RemoteInterpreterEventServi
   @Override
   public void updateParagraphConfig(String noteId,
                                     String paragraphId,
-                                    Map<String, String> config)
-          throws InterpreterRPCException, TException {
+                                    Map<String, String> config) throws TException {
     try {
       Note note = interpreterSettingManager.getNotebook().getNote(noteId);
       note.getParagraph(paragraphId).updateConfig(config);

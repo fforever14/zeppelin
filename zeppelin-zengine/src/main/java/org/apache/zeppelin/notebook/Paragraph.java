@@ -350,11 +350,6 @@ public class Paragraph extends JobWithProgressPoller<InterpreterResult> implemen
               = interpreterSetting.getConfig(interpreter.getClassName());
       mergeConfig(config);
 
-      // clear output
-      setResult(null);
-      cleanOutputBuffer();
-      cleanRuntimeInfos();
-
       setStatus(Status.PENDING);
 
       if (shouldSkipRunParagraph()) {

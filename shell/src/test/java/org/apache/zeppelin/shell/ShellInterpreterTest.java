@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.apache.zeppelin.interpreter.InterpreterException;
-import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,12 +40,10 @@ public class ShellInterpreterTest {
   @Before
   public void setUp() throws Exception {
     Properties p = new Properties();
-    p.setProperty("shell.command.timeout.millisecs", "5000");
-    p.setProperty("shell.command.timeout.check.interval", "1000");
+    p.setProperty("shell.command.timeout.millisecs", "2000");
     shell = new ShellInterpreter(p);
-    context = InterpreterContext.builder()
-            .setInterpreterOut(new InterpreterOutput())
-            .setParagraphId("paragraphId").build();
+
+    context = InterpreterContext.builder().setParagraphId("paragraphId").build();
     shell.open();
   }
 
@@ -62,10 +59,10 @@ public class ShellInterpreterTest {
       result = shell.interpret("ls", context);
     }
     assertEquals(InterpreterResult.Code.SUCCESS, result.code());
-    assertTrue(shell.getExecutorMap().isEmpty());
+    assertTrue(shell.executors.isEmpty());
     // it should be fine to cancel a statement that has been completed.
     shell.cancel(context);
-    assertTrue(shell.getExecutorMap().isEmpty());
+    assertTrue(shell.executors.isEmpty());
   }
 
   @Test
@@ -76,30 +73,18 @@ public class ShellInterpreterTest {
       result = shell.interpret("invalid_command\nls", context);
     }
     assertEquals(Code.SUCCESS, result.code());
-    assertTrue(shell.getExecutorMap().isEmpty());
+    assertTrue(shell.executors.isEmpty());
   }
 
   @Test
   public void testShellTimeout() throws InterpreterException {
     if (System.getProperty("os.name").startsWith("Windows")) {
-      result = shell.interpret("timeout 8", context);
+      result = shell.interpret("timeout 4", context);
     } else {
-      result = shell.interpret("sleep 8", context);
+      result = shell.interpret("sleep 4", context);
     }
-    // exit shell process because no output is produced during the timeout threshold
+
     assertEquals(Code.INCOMPLETE, result.code());
     assertTrue(result.message().get(0).getData().contains("Paragraph received a SIGTERM"));
-  }
-
-  @Test
-  public void testShellTimeout2() throws InterpreterException {
-    context = InterpreterContext.builder()
-            .setParagraphId("paragraphId")
-            .setInterpreterOut(new InterpreterOutput())
-            .build();
-    result = shell.interpret("for i in {1..10}\ndo\n\tsleep 1\n\techo $i\ndone", context);
-    // won't exit shell because the continues output is produced
-    assertEquals(Code.SUCCESS, result.code());
-    assertEquals("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n", context.out.toString());
   }
 }

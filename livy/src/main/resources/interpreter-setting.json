@@ -161,12 +161,6 @@
         "defaultValue": false,
         "description": "Execute multiple SQL concurrently if set true.",
         "type": "checkbox"
-      },
-      "zeppelin.livy.tableWithUTFCharacter": {
-        "propertyName": "zeppelin.livy.tableWithUTFCharacter",
-        "defaultValue": false,
-        "description": "If database contains UTF characters then set this as true.",
-        "type": "checkbox"
       }
     },
     "option": {

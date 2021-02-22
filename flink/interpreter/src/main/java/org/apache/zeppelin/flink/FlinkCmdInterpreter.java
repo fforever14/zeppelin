@@ -16,8 +16,12 @@
  */
 
 
-package org.apache.zeppelin.flink.cmd;
+package org.apache.zeppelin.flink;
 
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterOutputListener;
@@ -27,6 +31,7 @@ import org.apache.zeppelin.shell.ShellInterpreter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Properties;
 
 public class FlinkCmdInterpreter extends ShellInterpreter {
@@ -76,11 +81,35 @@ public class FlinkCmdInterpreter extends ShellInterpreter {
       }
       if (text.contains("Submitted application")) {
         // yarn mode, extract yarn proxy url as flink ui link
-        YarnUtils.buildFlinkUIInfo(text, context);
+        buildFlinkUIInfo(text, context);
         isFlinkUrlSent = true;
       }
     }
 
+    private void buildFlinkUIInfo(String log, InterpreterContext context) {
+      int pos = log.lastIndexOf(" ");
+      if (pos != -1) {
+        String appId = log.substring(pos + 1);
+        try {
+          YarnClient yarnClient = YarnClient.createYarnClient();
+          yarnClient.init(new YarnConfiguration());
+          yarnClient.start();
+
+          ApplicationReport applicationReport = yarnClient.getApplicationReport(ConverterUtils.toApplicationId(appId));
+          Map<String, String> infos = new java.util.HashMap<String, String>();
+          infos.put("jobUrl", applicationReport.getTrackingUrl());
+          infos.put("label", "Flink UI");
+          infos.put("tooltip", "View in Flink web UI");
+          infos.put("noteId", context.getNoteId());
+          infos.put("paraId", context.getParagraphId());
+          context.getIntpEventClient().onParaInfosReceived(infos);
+        } catch (Exception e) {
+          LOGGER.error("Fail to extract flink url", e);
+        }
+      } else {
+        LOGGER.error("Unable to extract flink url from this log: " + log);
+      }
+    }
 
     @Override
     public void onUpdate(int index, InterpreterResultMessageOutput out) {

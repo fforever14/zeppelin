@@ -16,7 +16,7 @@
  */
 
 
-package org.apache.zeppelin.spark.submit;
+package org.apache.zeppelin.spark;
 
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterOutput;
@@ -32,7 +32,7 @@ import java.util.Properties;
 
 
 /**
- * Support %spark-submit which run spark-submit command. Internally,
+ * Support %spark.submit which run spark-submit command. Internally,
  * it would run shell command via ShellInterpreter.
  *
  */
@@ -66,7 +66,7 @@ public class SparkSubmitInterpreter extends ShellInterpreter {
     private InterpreterContext context;
     private boolean isSparkUrlSent = false;
 
-    SparkSubmitOutputListener(InterpreterContext context) {
+    public SparkSubmitOutputListener(InterpreterContext context) {
       this.context = context;
     }
 

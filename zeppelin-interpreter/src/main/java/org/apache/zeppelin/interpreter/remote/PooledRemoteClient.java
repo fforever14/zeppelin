@@ -21,7 +21,6 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.TException;
 import org.apache.thrift.TServiceClient;
-import org.apache.zeppelin.interpreter.thrift.InterpreterRPCException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +85,6 @@ public class PooledRemoteClient<T extends TServiceClient> {
 
   public <R> R callRemoteFunction(RemoteFunction<R, T> func) {
     boolean broken = false;
-    String errorCause = null;
     for (int i = 0;i < RETRY_COUNT; ++ i) {
       T client = null;
       broken = false;
@@ -95,15 +93,11 @@ public class PooledRemoteClient<T extends TServiceClient> {
         if (client != null) {
           return func.call(client);
         }
-      } catch (InterpreterRPCException e) {
-        // zeppelin side exception, no need to retry
-        broken = true;
-        errorCause = e.getErrorMessage();
-        break;
-      } catch (Exception e1) {
-        // thrift framework exception (maybe due to network issue), need to retry
+      } catch (TException e) {
         broken = true;
         continue;
+      } catch (Exception e1) {
+        throw new RuntimeException(e1);
       } finally {
         if (client != null) {
           releaseClient(client, broken);
@@ -111,13 +105,13 @@ public class PooledRemoteClient<T extends TServiceClient> {
       }
     }
     if (broken) {
-      throw new RuntimeException(errorCause);
+      throw new RuntimeException("Fail to callRemoteFunction, because connection is broken");
     }
     return null;
   }
 
 
   public interface RemoteFunction<R, T> {
-    R call(T client) throws InterpreterRPCException, TException;
+    R call(T client) throws Exception;
   }
 }

@@ -1685,7 +1685,7 @@ public class NotebookServer extends WebSocketServlet
     try {
       Note note = getNotebook().getNote(noteId);
       if (note == null) {
-        LOG.warn("Note {} not found", noteId);
+        LOG.warn("Note " + noteId + " note found");
         return;
       }
       Paragraph paragraph = note.getParagraph(paragraphId);
